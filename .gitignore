@@ -131,3 +131,4 @@ dmypy.json
 #export files
 /export/*.md
 index.html
+.DS_Store
