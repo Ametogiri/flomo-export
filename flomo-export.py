@@ -1,9 +1,7 @@
 """
-Author: bbruceyuan
-Time: 2023/2/8
-
+Forked from: bbruceyuan
 导出 flomo 的数据,
-把从官网导出的 flomo 数据，导出成数据，共其他的 app 使用，比如 obsidian, typora, logseq,
+把从官网导出的 flomo 数据，导出成MD格式，按日期切分文件。
 """
 import argparse
 import pathlib
@@ -25,6 +23,7 @@ class Memo:
         - 无序列表；
         目前暂时不支持嵌套 （因为 flomo 不支持）
     """
+    create_date: str
     create_time: str
     content: str = ""
     file_list: Optional[List[str]] = None
@@ -100,6 +99,7 @@ def _parse_one_memo(item) -> Memo:
         })
 
     ret.update({
+        "create_date": time_item.getText()[:10],
         "create_time": time_item.getText()
     })
     memo = Memo(**ret)
@@ -161,10 +161,11 @@ def _extract_tag_from_content(content_: Any) -> Tuple[List[str], str]:
 
 def write_memo_as_md(memos: List[Memo], file_path: Optional[pathlib.Path] = None) -> None:
     def _memo_to_md(one_memo: Memo) -> str:
+        # ret = "- {}\n".format(one_memo.create_date)
         ret = "- {}".format(one_memo.create_time)
-        if one_memo.tag_list:
-            ret += "  ,  {}".format(" ".join(one_memo.tag_list))
         ret += "\n\n"
+        if one_memo.tag_list:
+            one_memo.content = "{}\n".format(" ".join(one_memo.tag_list)) + one_memo.content
         contents = one_memo.content.split("\n")
         for one_line in contents:
             if one_line:
@@ -178,7 +179,7 @@ def write_memo_as_md(memos: List[Memo], file_path: Optional[pathlib.Path] = None
 
         # 如果是导入到 logseq 中，使用下面的三行
         # ret += "\t- " + one_memo.content
-        ret += "\n\n"
+        ret += "\n"
         return ret
 
     memos = sorted(memos)
@@ -203,9 +204,20 @@ def main():
     cur_path = pathlib.Path(args.input)
     html_files = cur_path.glob("**/*.html")
     memos = []
+    memo_dates = set()
+
     for file in html_files:
         memos.extend(parse_file(file))
-    write_memo_as_md(memos, pathlib.Path(args.out))
+    for memo in memos:
+        memo_dates.add(memo.create_date)
+    for memo_date in memo_dates:
+        day_memos = []
+        for memo in memos:
+            if memo_date == memo.create_date:
+                day_memos.append(memo)
+            else:
+                pass
+        write_memo_as_md(day_memos, pathlib.Path('export/'+memo_date +'.md'))
 
 
 if __name__ == '__main__':
