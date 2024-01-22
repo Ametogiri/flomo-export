@@ -129,5 +129,5 @@ dmypy.json
 .pyre/
 
 #export files
-/export
+/export/*.md
 index.html
